@@ -46,7 +46,8 @@ let userChoice = 1;
 /**
  * game1 
  * tile size; levelData; rows; cols; offsetX; offsetY; playerX position; playerY position
- * is the player collide with wall;
+ * is the player collide with something;
+ * the echo, active echo wave or not
  */
 
 let tileSize = 80;
@@ -57,9 +58,27 @@ let offsetX;
 let offsetY;
 let playerX;
 let playerY;
+
 let isFirstTime = true;
 let isCollideWithWall = false;
 let playerMoveSpeed = 5;
+let isPlayerMove = true;
+
+let isFirstTimeCalculate = true;
+let outisdeDiameter = 1500;
+
+let insideDiameter = 35;
+let originInsideDiameter = 35;
+
+let insideVertex = [];
+let outsideVertex = [];
+let ScaleSpeed = 8;
+let isStartScale = false;
+let echoColor = {
+    alpha: 255,
+    speed: 10,
+}
+let activeEchoWave = false;
 
 
 //preload level
@@ -71,6 +90,8 @@ function preload() {
 function setup() {
     createCanvas(1280, 720);
 
+    let centerX = width / 2;
+    let centerY = height / 2;
 
     /**
      * menu
@@ -97,6 +118,8 @@ function setup() {
 
 
 
+
+
     //debug 
     console.log(rows, cols, tileSize);
 
@@ -113,49 +136,12 @@ function draw() {
     }
     else if (currentScene === scene.game1) {
         drawLevels();
+        drawEcho();
         drawPlayer();
+        playerInput();
+        echoWave();
 
-        //player input 
-        let newPositionX;
-        let newPositionY;
-        if (keyIsDown(LEFT_ARROW)) {
-            //the next position 
-            newPositionX = playerX - playerMoveSpeed;
-            newPositionY = playerY;
 
-            if (!isPlayerCollide(newPositionX, newPositionY, "#", "left")) {
-                playerX = newPositionX;
-            }
-
-        }
-
-        if (keyIsDown(RIGHT_ARROW)) {
-            //the next position 
-            newPositionX = playerX + playerMoveSpeed;
-            newPositionY = playerY;
-
-            if (!isPlayerCollide(newPositionX, newPositionY, "#", "right")) {
-                playerX = newPositionX;
-            }
-        }
-
-        if (keyIsDown(UP_ARROW)) {
-            newPositionX = playerX;
-            newPositionY = playerY - playerMoveSpeed;
-
-            if (!isPlayerCollide(newPositionX, newPositionY, "#", "up")) {
-                playerY = newPositionY;
-            }
-        }
-
-        if (keyIsDown(DOWN_ARROW)) {
-            newPositionX = playerX;
-            newPositionY = playerY + playerMoveSpeed;
-
-            if (!isPlayerCollide(newPositionX, newPositionY, "#", "down")) {
-                playerY = newPositionY;
-            }
-        }
 
     }
 }
@@ -228,6 +214,21 @@ function keyPressed() {
 
 }
 
+/**
+ * keyboard release 
+ * use in echo 
+ */
+
+function keyReleased() {
+    if (currentScene === scene.game1) {
+
+        if (keyCode === 32) {
+            activeEchoWave = true;
+
+        }
+    }
+}
+
 
 /**
  * game1 
@@ -293,4 +294,170 @@ function isPlayerCollide(x, y, type, direction) {
         return firstGameLevelData[gridY][gridX] === type;
     }
     return false;
+}
+
+//echo effect 
+function drawEcho() {
+
+    //only calculate once 
+    if (isFirstTimeCalculate) {
+        for (let angle = 0; angle <= TWO_PI; angle += 0.001) {
+            let x = playerX + tileSize / 2 + Math.cos(angle) * outisdeDiameter;
+            let y = playerY + tileSize / 2 + Math.sin(angle) * outisdeDiameter;
+            outsideVertex.push({ x, y });
+        }
+
+        for (let angle = TWO_PI; angle >= 0; angle -= 0.001) {
+            let x = playerX + tileSize / 2 + Math.cos(angle) * insideDiameter;
+            let y = playerY + tileSize / 2 + Math.sin(angle) * insideDiameter;
+            insideVertex.push({ x, y });
+        }
+
+
+        isFirstTimeCalculate = false;
+    }
+
+
+    push();
+    noStroke();
+    fill(100, 100, 100, echoColor.alpha);
+
+
+    beginShape();
+    for (let outsidePoint of outsideVertex) {
+        vertex(outsidePoint.x, outsidePoint.y);
+    }
+
+    for (let insidePoint of insideVertex) {
+        vertex(insidePoint.x, insidePoint.y);
+    }
+
+
+
+    endShape(CLOSE);
+
+    pop();
+}
+
+function updatePoints(direction) {
+    if (direction === "left") {
+        outsideVertex.forEach(point => {
+            point.x -= playerMoveSpeed;
+        });
+        insideVertex.forEach(point => {
+            point.x -= playerMoveSpeed;
+        })
+    }
+    else if (direction === "right") {
+        outsideVertex.forEach(point => {
+            point.x += playerMoveSpeed;
+        });
+        insideVertex.forEach(point => {
+            point.x += playerMoveSpeed;
+        })
+    }
+    else if (direction === "up") {
+        outsideVertex.forEach(point => {
+            point.y -= playerMoveSpeed;
+        });
+        insideVertex.forEach(point => {
+            point.y -= playerMoveSpeed;
+        })
+    }
+    else if (direction === "down") {
+        outsideVertex.forEach(point => {
+            point.y += playerMoveSpeed;
+        });
+        insideVertex.forEach(point => {
+            point.y += playerMoveSpeed;
+        })
+    }
+    else if (direction === "echo") {
+        insideVertex = [];
+        for (let angle = TWO_PI; angle >= 0; angle -= 0.001) {
+            let x = playerX + tileSize / 2 + Math.cos(angle) * insideDiameter;
+            let y = playerY + tileSize / 2 + Math.sin(angle) * insideDiameter;
+            insideVertex.push({ x, y });
+        }
+
+    }
+
+}
+
+function playerInput() {
+    //player input 
+    let newPositionX;
+    let newPositionY;
+    if (keyIsDown(LEFT_ARROW)) {
+
+
+
+        //the next position 
+        newPositionX = playerX - playerMoveSpeed;
+        newPositionY = playerY;
+
+        if (!isPlayerCollide(newPositionX, newPositionY, "#", "left")) {
+            updatePoints("left");
+            playerX = newPositionX;
+        }
+
+
+    }
+
+    if (keyIsDown(RIGHT_ARROW)) {
+
+
+
+        //the next position 
+        newPositionX = playerX + playerMoveSpeed;
+        newPositionY = playerY;
+
+        if (!isPlayerCollide(newPositionX, newPositionY, "#", "right")) {
+            updatePoints("right");
+            playerX = newPositionX;
+        }
+    }
+
+    if (keyIsDown(UP_ARROW)) {
+
+
+
+        newPositionX = playerX;
+        newPositionY = playerY - playerMoveSpeed;
+
+        if (!isPlayerCollide(newPositionX, newPositionY, "#", "up")) {
+            updatePoints("up");
+            playerY = newPositionY;
+        }
+    }
+
+    if (keyIsDown(DOWN_ARROW)) {
+
+
+
+
+        newPositionX = playerX;
+        newPositionY = playerY + playerMoveSpeed;
+
+        if (!isPlayerCollide(newPositionX, newPositionY, "#", "down")) {
+            updatePoints("down");
+            playerY = newPositionY;
+        }
+    }
+
+
+}
+
+function echoWave() {
+    if (activeEchoWave) {
+
+        insideDiameter += ScaleSpeed;
+
+        if (insideDiameter >= outisdeDiameter) {
+            insideDiameter = originInsideDiameter;
+            console.log("active");
+            activeEchoWave = false;
+        }
+        updatePoints("echo");
+    }
 }
