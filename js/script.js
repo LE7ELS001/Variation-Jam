@@ -45,7 +45,8 @@ let userChoice = 1;
 
 /**
  * game1 
- * tile size; levelData; rows; cols; offsetX; offsetY;
+ * tile size; levelData; rows; cols; offsetX; offsetY; playerX position; playerY position
+ * is the player collide with wall;
  */
 
 let tileSize = 80;
@@ -54,6 +55,11 @@ let rows;
 let cols;
 let offsetX;
 let offsetY;
+let playerX;
+let playerY;
+let isFirstTime = true;
+let isCollideWithWall = false;
+let playerMoveSpeed = 5;
 
 
 //preload level
@@ -88,6 +94,9 @@ function setup() {
 
     offsetX = (width - cols * tileSize) / 2;
     offsetY = (height - rows * tileSize) / 2;
+
+
+
     //debug 
     console.log(rows, cols, tileSize);
 
@@ -104,6 +113,50 @@ function draw() {
     }
     else if (currentScene === scene.game1) {
         drawLevels();
+        drawPlayer();
+
+        //player input 
+        let newPositionX;
+        let newPositionY;
+        if (keyIsDown(LEFT_ARROW)) {
+            //the next position 
+            newPositionX = playerX - playerMoveSpeed;
+            newPositionY = playerY;
+
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "left")) {
+                playerX = newPositionX;
+            }
+
+        }
+
+        if (keyIsDown(RIGHT_ARROW)) {
+            //the next position 
+            newPositionX = playerX + playerMoveSpeed;
+            newPositionY = playerY;
+
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "right")) {
+                playerX = newPositionX;
+            }
+        }
+
+        if (keyIsDown(UP_ARROW)) {
+            newPositionX = playerX;
+            newPositionY = playerY - playerMoveSpeed;
+
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "up")) {
+                playerY = newPositionY;
+            }
+        }
+
+        if (keyIsDown(DOWN_ARROW)) {
+            newPositionX = playerX;
+            newPositionY = playerY + playerMoveSpeed;
+
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "down")) {
+                playerY = newPositionY;
+            }
+        }
+
     }
 }
 
@@ -172,6 +225,7 @@ function keyPressed() {
             }
         }
     }
+
 }
 
 
@@ -197,15 +251,46 @@ function drawLevels() {
                 pop();
             }
             else if (tile === "1") {
-                //player 
-                push();
-                fill(200, 50, 25);
-                ellipse(posX + tileSize / 2, posY + tileSize / 2, tileSize / 2);
-                pop();
+                if (isFirstTime) {
+                    playerX = posX;
+                    playerY = posY;
+                    isFirstTime = false;
+                }
+
             }
             else if (tile === " ") {
                 continue;
             }
         }
     }
+}
+
+function drawPlayer() {
+    //player 
+    push();
+    fill(200, 50, 25);
+    ellipse(playerX + tileSize / 2, playerY + tileSize / 2, tileSize / 2);
+    pop();
+}
+
+function isPlayerCollide(x, y, type, direction) {
+
+    let gridX;
+    let gridY;
+    if (direction === "left" || direction === "up") {
+        //calculate the player position in txt(grid)
+        gridX = Math.floor((x - offsetX) / tileSize);
+        gridY = Math.floor((y - offsetY) / tileSize);
+    }
+    else if (direction === "right" || direction === "down") {
+        gridX = Math.ceil((x - offsetX) / tileSize);
+        gridY = Math.ceil((y - offsetY) / tileSize);
+    }
+
+
+    if (gridX >= 0 && gridX < cols && gridY >= 0 && gridY < rows) {
+        //check if the next position already exist something
+        return firstGameLevelData[gridY][gridX] === type;
+    }
+    return false;
 }
