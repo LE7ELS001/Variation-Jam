@@ -48,6 +48,7 @@ let userChoice = 1;
  * tile size; levelData; rows; cols; offsetX; offsetY; playerX position; playerY position
  * is the player collide with something;
  * the echo, active echo wave or not
+ * image: egg
  */
 
 let tileSize = 80;
@@ -76,14 +77,25 @@ let ScaleSpeed = 8;
 let isStartScale = false;
 let echoColor = {
     alpha: 255,
+    defaultAlpha: 255,
     speed: 10,
+    alphaFadingSpeed: 5,
+    R: 0,
+    G: 0,
+    B: 0,
 }
 let activeEchoWave = false;
+let activeColorFading = false;
+
+let egg;
+let pen;
 
 
-//preload level
+//preload level / image
 function preload() {
-    firstGameLevelData = loadStrings('../assets/levels/level0.txt');
+    firstGameLevelData = loadStrings('../assets/levels/level.txt');
+    egg = loadImage("../assets/images/egg.png");
+    pen = loadImage("../assets/images/pen/png");
 }
 
 
@@ -140,6 +152,7 @@ function draw() {
         drawPlayer();
         playerInput();
         echoWave();
+        echoColorFading();
 
 
 
@@ -224,7 +237,6 @@ function keyReleased() {
 
         if (keyCode === 32) {
             activeEchoWave = true;
-
         }
     }
 }
@@ -246,10 +258,7 @@ function drawLevels() {
 
             if (tile === "#") {
                 // walls 
-                push();
-                fill(0);
-                rect(posX, posY, tileSize, tileSize);
-                pop();
+                drawWall(posX, posY);
             }
             else if (tile === "1") {
                 if (isFirstTime) {
@@ -262,31 +271,28 @@ function drawLevels() {
             else if (tile === " ") {
                 continue;
             }
+            else if (tile === "2") {
+                drawPen(posX, posY);
+            }
         }
     }
 }
 
 function drawPlayer() {
-    //player 
-    push();
-    fill(200, 50, 25);
-    ellipse(playerX + tileSize / 2, playerY + tileSize / 2, tileSize / 2);
-    pop();
+    image(egg, playerX, playerY, tileSize, tileSize, 0, 0, egg.width, egg.height);
 }
 
 function isPlayerCollide(x, y, type, direction) {
 
     let gridX;
     let gridY;
-    if (direction === "left" || direction === "up") {
+    let buffer = 2;
+    if (direction === "left" || direction === "up" || direction === "right" || direction === "down") {
         //calculate the player position in txt(grid)
-        gridX = Math.floor((x - offsetX) / tileSize);
-        gridY = Math.floor((y - offsetY) / tileSize);
+        gridX = Math.round((x - offsetX + buffer) / tileSize);
+        gridY = Math.round((y - offsetY + buffer) / tileSize);
     }
-    else if (direction === "right" || direction === "down") {
-        gridX = Math.ceil((x - offsetX) / tileSize);
-        gridY = Math.ceil((y - offsetY) / tileSize);
-    }
+
 
 
     if (gridX >= 0 && gridX < cols && gridY >= 0 && gridY < rows) {
@@ -319,8 +325,8 @@ function drawEcho() {
 
 
     push();
-    noStroke();
-    fill(100, 100, 100, echoColor.alpha);
+    stroke(echoColor.R, echoColor.G, echoColor.B, echoColor.alpha);
+    fill(echoColor.R, echoColor.G, echoColor.B, echoColor.alpha);
 
 
     beginShape();
@@ -455,9 +461,34 @@ function echoWave() {
 
         if (insideDiameter >= outisdeDiameter) {
             insideDiameter = originInsideDiameter;
-            console.log("active");
             activeEchoWave = false;
+
+            echoColor.alpha = 0;
+            activeColorFading = true;
         }
         updatePoints("echo");
     }
+}
+
+function echoColorFading() {
+    if (activeColorFading) {
+        echoColor.alpha += echoColor.alphaFadingSpeed;
+
+        if (echoColor.alpha >= echoColor.defaultAlpha) {
+            echoColor.alpha = echoColor.defaultAlpha;
+            activeColorFading = false;
+        }
+
+    }
+}
+
+function drawWall(x, y) {
+    push();
+    fill(0);
+    rect(x, y, tileSize, tileSize);
+    pop();
+}
+
+function drawPen(x, y) {
+    image(pen, x, y, tileSize, tileSize, 0, 0, pen.width, pen.height);
 }
