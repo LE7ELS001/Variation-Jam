@@ -95,7 +95,8 @@ let pen;
 function preload() {
     firstGameLevelData = loadStrings('../assets/levels/level.txt');
     egg = loadImage("../assets/images/egg.png");
-    pen = loadImage("../assets/images/pen/png");
+    pen = loadImage("../assets/images/pen.png");
+    plant = loadImage("../assets/images/plant.png");
 }
 
 
@@ -272,7 +273,10 @@ function drawLevels() {
                 continue;
             }
             else if (tile === "2") {
-                drawPen(posX, posY);
+                drawTarget(posX, posY, pen);
+            }
+            else if (tile === "3") {
+                drawTarget(posX, posY, plant);
             }
         }
     }
@@ -489,6 +493,6 @@ function drawWall(x, y) {
     pop();
 }
 
-function drawPen(x, y) {
-    image(pen, x, y, tileSize, tileSize, 0, 0, pen.width, pen.height);
+function drawTarget(x, y, photo) {
+    image(photo, x, y, tileSize, tileSize, 0, 0, photo.width, photo.height);
 }
