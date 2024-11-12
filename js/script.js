@@ -89,7 +89,11 @@ let activeColorFading = false;
 
 let egg;
 let pen;
-
+let plant;
+let color;
+let philosophy;
+let chicken;
+let river;
 
 //preload level / image
 function preload() {
@@ -97,6 +101,10 @@ function preload() {
     egg = loadImage("../assets/images/egg.png");
     pen = loadImage("../assets/images/pen.png");
     plant = loadImage("../assets/images/plant.png");
+    color = loadImage("../assets/images/color.png");
+    philosophy = loadImage("../assets/images/philosophy.png");
+    chicken = loadImage("../assets/images/chicken.png");
+    river = loadImage("../assets/images/river.png");
 }
 
 
@@ -277,6 +285,18 @@ function drawLevels() {
             }
             else if (tile === "3") {
                 drawTarget(posX, posY, plant);
+            }
+            else if (tile === "4") {
+                drawTarget(posX, posY, chicken);
+            }
+            else if (tile === "5") {
+                drawTarget(posX, posY, philosophy);
+            }
+            else if (tile === "6") {
+                drawTarget(posX, posY, river);
+            }
+            else if (tile === "7") {
+                drawTarget(posX, posY, color);
             }
         }
     }
