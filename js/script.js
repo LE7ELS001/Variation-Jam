@@ -23,6 +23,7 @@
 let scene = {
     menu: "menu",
     game1: "game1",
+    gameOver1: "gameOver1",
     game2: "game2",
     game3: "game3"
 }
@@ -40,6 +41,9 @@ let textLocation = {
 //which game user choose
 let userChoice = 1;
 
+//window center position 
+let centerX;
+let centerY;
 
 //---------------------
 
@@ -49,6 +53,7 @@ let userChoice = 1;
  * is the player collide with something;
  * the echo, active echo wave or not
  * image: egg
+ * ending
  */
 
 let tileSize = 80;
@@ -68,8 +73,8 @@ let isPlayerMove = true;
 let isFirstTimeCalculate = true;
 let outisdeDiameter = 1500;
 
-let insideDiameter = 35;
-let originInsideDiameter = 35;
+let insideDiameter = 15;
+let originInsideDiameter = 15;
 
 let insideVertex = [];
 let outsideVertex = [];
@@ -93,10 +98,60 @@ let plant;
 let color;
 let philosophy;
 let chicken;
-let river;
+let spoon;
+
+let ending = 0;
+
+
+/**
+     * game2
+     * map 
+     * player 
+     */
+
+let secondGameLevelData = [];
+
+let game2Map = {
+    rows: undefined,
+    cols: undefined,
+
+    //try to fit the canvas size
+    tileSize: undefined,
+
+    offsetX: undefined,
+    offsetY: undefined,
+}
+
+let game2Player = {
+    isFirstTime: true,
+    playerX: undefined,
+    playerY: undefined,
+    R: 120,
+    G: 120,
+    B: 120,
+    moveSpeed: 4,
+    originX: undefined,
+    originY: undefined,
+    gravity: 0.2,
+    velocity: 0,
+    jumpHeight: -10,
+    onTheGround: true,
+    isJumping: false
+
+}
+
+
+
+let walls = [];
+let RedBrick = [];
+let GreenBrick = [];
+let BlueBrick = [];
+let greyBrick = [];
+
 
 //preload level / image
 function preload() {
+    // game 1
     firstGameLevelData = loadStrings('../assets/levels/level.txt');
     egg = loadImage("../assets/images/egg.png");
     pen = loadImage("../assets/images/pen.png");
@@ -104,21 +159,24 @@ function preload() {
     color = loadImage("../assets/images/color.png");
     philosophy = loadImage("../assets/images/philosophy.png");
     chicken = loadImage("../assets/images/chicken.png");
-    river = loadImage("../assets/images/river.png");
+    spoon = loadImage("../assets/images/spoon.png");
+
+    //game 2 
+    secondGameLevelData = loadStrings('../assets/levels/2-level.txt');
 }
 
 
 function setup() {
     createCanvas(1280, 720);
 
-    let centerX = width / 2;
-    let centerY = height / 2;
+    centerX = width / 2;
+    centerY = height / 2;
 
     /**
      * menu
      */
     //set default scene to menu
-    currentScene = scene.game1;
+    currentScene = scene.game2;
 
     //calculate text location
     let interval = height / 3
@@ -136,6 +194,57 @@ function setup() {
 
     offsetX = (width - cols * tileSize) / 2;
     offsetY = (height - rows * tileSize) / 2;
+
+
+    /**
+     * game2 
+     */
+
+
+    game2Map.rows = secondGameLevelData.length;
+    game2Map.cols = secondGameLevelData[0].length;
+
+    //try to fit the canvas size
+    game2Map.tileSize = min(width / game2Map.cols, height / game2Map.rows);
+
+    game2Map.offsetX = (width - game2Map.cols * game2Map.tileSize) / 2;
+    game2Map.offsetY = (height - game2Map.rows * game2Map.tileSize) / 2;
+
+    //get all bricks position
+    for (let y = 0; y < game2Map.rows; y++) {
+        let colLength = secondGameLevelData[y].length;
+        for (let x = 0; x < colLength; x++) {
+            let tile = secondGameLevelData[y][x];
+            let posX = x * game2Map.tileSize + game2Map.offsetX;
+            let posY = y * game2Map.tileSize + game2Map.offsetY;
+            if (tile === "#") {
+                // walls 
+                walls.push({ posX, posY });
+            }
+            else if (tile === "1") {
+                game2Player.originX = posX;
+                game2Player.originY = posY;
+                game2Player.playerX = posX;
+                game2Player.playerY = posY;
+            }
+            else if (tile === " ") {
+                continue;
+            }
+            else if (tile === "0") {
+                greyBrick.push({ posX, posY });
+            }
+            else if (tile === "2") {
+                RedBrick.push({ posX, posY });
+            }
+            else if (tile === "3") {
+                GreenBrick.push({ posX, posY });
+            }
+            else if (tile === "4") {
+                BlueBrick.push({ posX, posY });
+            }
+
+        }
+    }
 
 
 
@@ -162,9 +271,15 @@ function draw() {
         playerInput();
         echoWave();
         echoColorFading();
-
-
-
+    }
+    else if (currentScene === scene.gameOver1) {
+        drawGameOverText();
+    }
+    else if (currentScene === scene.game2) {
+        drawGame2Levels();
+        drawGame2Player();
+        applyGravity();
+        playerInput();
     }
 }
 
@@ -210,7 +325,7 @@ function drawSelectFrame() {
 
 /**
  * keyboard press
- * keyboard detect in game and in menu
+ * keyboard detect in menu in gameOver statement 
  */
 
 function keyPressed() {
@@ -231,6 +346,34 @@ function keyPressed() {
             else {
                 userChoice += 1;
             }
+        }
+    }
+
+    if (currentScene === scene.gameOver1) {
+        if (keyCode === ENTER) {
+
+            //reset calculate and position
+            isFirstTimeCalculate = true;
+            isFirstTime = true;
+
+            currentScene = scene.game1;
+        }
+
+        // ESC
+        if (keyCode === 27) {
+
+            isFirstTimeCalculate = true;
+            isFirstTime = true;
+            currentScene = scene.menu;
+        }
+    }
+
+    if (currentScene === scene.game2) {
+        if (keyCode === 32 && game2Player.onTheGround && !game2Player.isJumping) {
+            game2Player.velocity = game2Player.jumpHeight;
+            //console.log(game2Player.velocity);
+            game2Player.isJumping = true;
+            // game2Player.onTheGround = false;
         }
     }
 
@@ -267,7 +410,7 @@ function drawLevels() {
 
             if (tile === "#") {
                 // walls 
-                drawWall(posX, posY);
+                drawWall(posX, posY, tileSize);
             }
             else if (tile === "1") {
                 if (isFirstTime) {
@@ -293,7 +436,7 @@ function drawLevels() {
                 drawTarget(posX, posY, philosophy);
             }
             else if (tile === "6") {
-                drawTarget(posX, posY, river);
+                drawTarget(posX, posY, spoon);
             }
             else if (tile === "7") {
                 drawTarget(posX, posY, color);
@@ -331,6 +474,8 @@ function drawEcho() {
 
     //only calculate once 
     if (isFirstTimeCalculate) {
+        outsideVertex = [];
+        insideVertex = [];
         for (let angle = 0; angle <= TWO_PI; angle += 0.001) {
             let x = playerX + tileSize / 2 + Math.cos(angle) * outisdeDiameter;
             let y = playerY + tileSize / 2 + Math.sin(angle) * outisdeDiameter;
@@ -418,17 +563,46 @@ function playerInput() {
     //player input 
     let newPositionX;
     let newPositionY;
+
+
+
     if (keyIsDown(LEFT_ARROW)) {
+        //game1 
+        if (currentScene === scene.game1) {
+
+            //the next position 
+            newPositionX = playerX - playerMoveSpeed;
+            newPositionY = playerY;
+
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "left")) {
+                updatePoints("left");
+                playerX = newPositionX;
+            }
+
+            if (isPlayerCollide(newPositionX, newPositionY, "2", "left")) {
+                currentScene = scene.gameOver1;
+                // which ending player has 
+                ending = 2;
+            }
+
+            if (isPlayerCollide(newPositionX, newPositionY, "3", "left")) {
+                currentScene = scene.gameOver1;
+                // which ending player has 
+                ending = 3;
+            }
+        }
+
+        //game2
+        if (currentScene === scene.game2) {
+            newPositionX = game2Player.playerX - game2Player.moveSpeed;
+            newPositionY = game2Player.playerY;
 
 
+            if (game2CanMove(newPositionX, newPositionY)) {
+                game2Player.playerX = newPositionX;
+            }
 
-        //the next position 
-        newPositionX = playerX - playerMoveSpeed;
-        newPositionY = playerY;
 
-        if (!isPlayerCollide(newPositionX, newPositionY, "#", "left")) {
-            updatePoints("left");
-            playerX = newPositionX;
         }
 
 
@@ -437,28 +611,59 @@ function playerInput() {
     if (keyIsDown(RIGHT_ARROW)) {
 
 
+        // game 1
+        if (currentScene === scene.game1) {
 
-        //the next position 
-        newPositionX = playerX + playerMoveSpeed;
-        newPositionY = playerY;
+            //the next position 
+            newPositionX = playerX + playerMoveSpeed;
+            newPositionY = playerY;
 
-        if (!isPlayerCollide(newPositionX, newPositionY, "#", "right")) {
-            updatePoints("right");
-            playerX = newPositionX;
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "right")) {
+                updatePoints("right");
+                playerX = newPositionX;
+            }
+        }
+
+        //game2
+        if (currentScene === scene.game2) {
+            newPositionX = game2Player.playerX + game2Player.moveSpeed;
+            newPositionY = game2Player.playerY;
+
+            if (game2CanMove(newPositionX, newPositionY)) {
+                game2Player.playerX = newPositionX;
+
+            }
+
+
+
         }
     }
 
     if (keyIsDown(UP_ARROW)) {
 
 
+        if (currentScene === scene.game1) {
 
-        newPositionX = playerX;
-        newPositionY = playerY - playerMoveSpeed;
+            newPositionX = playerX;
+            newPositionY = playerY - playerMoveSpeed;
 
-        if (!isPlayerCollide(newPositionX, newPositionY, "#", "up")) {
-            updatePoints("up");
-            playerY = newPositionY;
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "up")) {
+                updatePoints("up");
+                playerY = newPositionY;
+            }
+            if (isPlayerCollide(newPositionX, newPositionY, "6", "down")) {
+                currentScene = scene.gameOver1;
+                // which ending player has 
+                ending = 6;
+            }
+
+            if (isPlayerCollide(newPositionX, newPositionY, "7", "down")) {
+                currentScene = scene.gameOver1;
+                // which ending player has 
+                ending = 7;
+            }
         }
+
     }
 
     if (keyIsDown(DOWN_ARROW)) {
@@ -466,13 +671,42 @@ function playerInput() {
 
 
 
-        newPositionX = playerX;
-        newPositionY = playerY + playerMoveSpeed;
+        if (currentScene === scene.game1) {
 
-        if (!isPlayerCollide(newPositionX, newPositionY, "#", "down")) {
-            updatePoints("down");
-            playerY = newPositionY;
+            newPositionX = playerX;
+            newPositionY = playerY + playerMoveSpeed;
+
+            if (!isPlayerCollide(newPositionX, newPositionY, "#", "down")) {
+                updatePoints("down");
+                playerY = newPositionY;
+            }
+
+            if (isPlayerCollide(newPositionX, newPositionY, "4", "down")) {
+                currentScene = scene.gameOver1;
+                // which ending player has 
+                ending = 4;
+            }
+
+            if (isPlayerCollide(newPositionX, newPositionY, "5", "down")) {
+                currentScene = scene.gameOver1;
+                // which ending player has 
+                ending = 5;
+            }
         }
+
+        if (currentScene === scene.game2) {
+            newPositionX = game2Player.playerX
+            newPositionY = game2Player.playerY + game2Player.moveSpeed;
+
+            if (game2CanMove(newPositionX, newPositionY)) {
+                game2Player.playerY = newPositionY;
+
+            }
+
+
+
+        }
+
     }
 
 
@@ -506,13 +740,305 @@ function echoColorFading() {
     }
 }
 
-function drawWall(x, y) {
+function drawWall(x, y, Size) {
     push();
     fill(0);
-    rect(x, y, tileSize, tileSize);
+    rect(x, y, Size, Size);
     pop();
 }
 
 function drawTarget(x, y, photo) {
     image(photo, x, y, tileSize, tileSize, 0, 0, photo.width, photo.height);
 }
+
+function drawGameOverText() {
+
+    switch (ending) {
+        case 2:
+            background(245, 90, 42);
+            endingText("You encounter Leonardo da Vinci and become his model for painting practice.", pen);
+            break;
+        case 3:
+            background(180, 233, 245);
+            endingText("You found a plant, you are an eggplant now.", plant);
+            break;
+        case 4:
+            background(245, 141, 59);
+            endingText("You find your way home, east or west, home is the best, isn't it?", chicken);
+            break;
+        case 5:
+            background(42, 109, 245);
+            endingText("You found Aristotle, and now he plans to discuss the age-old philosophical question of whether the chicken or the egg came first with you.", philosophy);
+            break;
+        case 6:
+            background(245, 52, 52);
+            endingText("You discovered a group of children playing an egg-and-spoon race, and you felt relieved that you didn't have to participate in such a dangerous activity.", spoon);
+            break;
+        case 7:
+            background(180, 120, 210);
+            endingText("You discovered paints hidden in a secret spot, and after that, you've become an Easter egg.", color);
+
+    }
+
+}
+
+function endingText(endingText, photo) {
+
+    //ending image
+    image(photo, width / 2.7, height / 20, 200, 200, 0, 0, photo.width, photo.height);
+
+    //ending text
+    push();
+    textSize(50);
+    textAlign(CENTER, CENTER);
+    textWrap(WORD);
+    fill(0, 0, 0);
+    text(endingText, width / 2 / 2, height / 2.7, 652,);
+    pop();
+
+    //continue text 
+    push();
+    textSize(25);
+    textAlign(CENTER, CENTER);
+    fill(0, 0, 0);
+    text("Press 'ENTER' to try again", width / 2, height / 1.12);
+    text("Press 'ESC' back to menu", width / 2, height / 1.05);
+    pop();
+
+}
+
+//----------------------------------------------
+
+/**
+ *  game2 
+ */
+
+function drawGame2Levels() {
+    background(230);
+
+    let bricksLength = walls.length;
+    let redLength = RedBrick.length;
+    let greenLength = GreenBrick.length;
+    let blueLength = BlueBrick.length;
+    let greyLength = greyBrick.length;
+    for (let i = 0; i < bricksLength; i++) {
+        drawWall(walls[i].posX, walls[i].posY, game2Map.tileSize);
+    }
+
+    for (let i = 0; i < redLength; i++) {
+        drawColorBlock(RedBrick[i].posX, RedBrick[i].posY, game2Map.tileSize, "red");
+    }
+
+    for (let i = 0; i < greenLength; i++) {
+        drawColorBlock(GreenBrick[i].posX, GreenBrick[i].posY, game2Map.tileSize, "green");
+    }
+
+    for (let i = 0; i < blueLength; i++) {
+        drawColorBlock(BlueBrick[i].posX, BlueBrick[i].posY, game2Map.tileSize, "blue");
+    }
+
+    for (let i = 0; i < greyLength; i++) {
+        drawColorBlock(greyBrick[i].posX, greyBrick[i].posY, game2Map.tileSize, "grey");
+    }
+
+}
+
+
+function drawColorBlock(x, y, Size, type) {
+    switch (type) {
+
+        case "grey":
+            //grey
+            push();
+            noStroke();
+            fill(120);
+            rect(x, y, Size, Size);
+            pop();
+            break;
+
+        case "red":
+            //red
+            push();
+            noStroke();
+            fill(240, 0, 0);
+            rect(x, y, Size, Size);
+            pop();
+            break;
+
+        case "green":
+            //green
+            push();
+            noStroke();
+            fill(0, 240, 0);
+            rect(x, y, Size, Size);
+            pop();
+            break;
+
+        case "blue":
+            //blue
+            push();
+            noStroke();
+            fill(0, 0, 240);
+            rect(x, y, Size, Size);
+            pop();
+            break;
+    }
+
+}
+
+function drawGame2Player() {
+    push();
+    noStroke();
+    fill(game2Player.R, game2Player.G, game2Player.B);
+    rect(game2Player.playerX, game2Player.playerY, game2Map.tileSize, game2Map.tileSize);
+    pop();
+
+}
+
+function game2CanMove(newX, newY) {
+    let bricksLength = walls.length;
+    let redLength = RedBrick.length;
+    let greenLength = GreenBrick.length;
+    let blueLength = BlueBrick.length;
+    let greyLength = greyBrick.length;
+
+    for (let i = 0; i < bricksLength; i++) {
+        let wall = walls[i];
+        if (newX < wall.posX + game2Map.tileSize &&
+            newX + game2Map.tileSize > wall.posX &&
+            newY < wall.posY + game2Map.tileSize &&
+            newY + game2Map.tileSize > wall.posY) {
+            return false
+        }
+    }
+
+
+    for (let i = 0; i < redLength; i++) {
+        let brick = RedBrick[i];
+        if (newX < brick.posX + game2Map.tileSize &&
+            newX + game2Map.tileSize > brick.posX &&
+            newY < brick.posY + game2Map.tileSize &&
+            newY + game2Map.tileSize > brick.posY) {
+            if (game2Player.R === 240) {
+                return true;
+            }
+            else if (game2Player.R === 120) {
+                game2Player.R = 240;
+                game2Player.G = 0;
+                game2Player.B = 0;
+            }
+            else {
+                return false;
+            }
+
+        }
+
+    }
+
+    for (let i = 0; i < greenLength; i++) {
+        let brick = GreenBrick[i];
+        if (newX < brick.posX + game2Map.tileSize &&
+            newX + game2Map.tileSize > brick.posX &&
+            newY < brick.posY + game2Map.tileSize &&
+            newY + game2Map.tileSize > brick.posY) {
+            if (game2Player.G === 240) {
+                return true;
+            }
+            else if (game2Player.R === 120) {
+                game2Player.R = 0;
+                game2Player.G = 240;
+                game2Player.B = 0;
+            }
+            else {
+                return false;
+            }
+
+        }
+    }
+
+    for (let i = 0; i < blueLength; i++) {
+        let brick = BlueBrick[i];
+        if (newX < brick.posX + game2Map.tileSize &&
+            newX + game2Map.tileSize > brick.posX &&
+            newY < brick.posY + game2Map.tileSize &&
+            newY + game2Map.tileSize > brick.posY) {
+            if (game2Player.B === 240) {
+                return true;
+            }
+            else if (game2Player.R === 120) {
+                game2Player.R = 0;
+                game2Player.G = 0;
+                game2Player.B = 240;
+            }
+            else {
+                return false;
+            }
+
+        }
+    }
+
+    for (let i = 0; i < greyLength; i++) {
+        let brick = greyBrick[i];
+        if (newX < brick.posX + game2Map.tileSize &&
+            newX + game2Map.tileSize > brick.posX &&
+            newY < brick.posY + game2Map.tileSize &&
+            newY + game2Map.tileSize > brick.posY) {
+            if (!(game2Player.R === 120)) {
+                game2Player.R = 120;
+                game2Player.G = 120;
+                game2Player.B = 120;
+            }
+            else if (game2Player.R === 120) {
+                return true;
+            }
+
+        }
+    }
+
+    return true
+
+
+
+}
+
+function applyGravity() {
+    let newPositionY
+    if (!game2Player.isJumping) {
+        newPositionY = game2Player.playerY + 0.1;
+        if (game2CanMove(game2Player.playerX, newPositionY)) {
+
+            game2Player.velocity += game2Player.gravity;
+            game2Player.playerY += game2Player.velocity;
+            game2Player.onTheGround = false;
+        }
+        else {
+            game2Player.onTheGround = true;
+            //game2Player.isJumping = false;
+            game2Player.velocity = 0;
+            game2Player.playerY = Math.floor(game2Player.playerY / game2Map.tileSize) * game2Map.tileSize;
+        }
+    }
+    else {
+        newPositionY = game2Player.playerY + game2Player.velocity;
+        if (game2CanMove(game2Player.playerX, newPositionY)) {
+            console.log(game2Player.playerY);
+            game2Player.velocity += game2Player.gravity;
+            game2Player.playerY += game2Player.velocity;
+            game2Player.onTheGround = false;
+        }
+        else {
+            game2Player.onTheGround = true;
+            game2Player.isJumping = false;
+            game2Player.velocity = 0;
+            game2Player.playerY = Math.floor(game2Player.playerY / game2Map.tileSize) * game2Map.tileSize;
+        }
+    }
+
+
+
+}
+
+
+
+
+
