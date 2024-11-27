@@ -25,6 +25,7 @@ let scene = {
     game1: "game1",
     gameOver1: "gameOver1",
     game2: "game2",
+    gameOver2: "gameOver2",
     game3: "game3"
 }
 
@@ -132,14 +133,13 @@ let game2Player = {
     moveSpeed: 4,
     originX: undefined,
     originY: undefined,
-    gravity: 0.2,
+    gravity: 0.25,
     velocity: 0,
-    jumpHeight: -10,
+    jumpHeight: -8,
     onTheGround: true,
     isJumping: false
 
 }
-
 
 
 let walls = [];
@@ -147,6 +147,12 @@ let RedBrick = [];
 let GreenBrick = [];
 let BlueBrick = [];
 let greyBrick = [];
+let goal = [];
+
+let game2Level = 1;
+
+
+
 
 
 //preload level / image
@@ -163,6 +169,7 @@ function preload() {
 
     //game 2 
     secondGameLevelData = loadStrings('../assets/levels/2-level.txt');
+    secondGameLevelData2 = loadStrings('../assets/levels/2-level2.txt');
 }
 
 
@@ -200,7 +207,7 @@ function setup() {
      * game2 
      */
 
-
+    //load map1 as default
     game2Map.rows = secondGameLevelData.length;
     game2Map.cols = secondGameLevelData[0].length;
 
@@ -242,6 +249,9 @@ function setup() {
             else if (tile === "4") {
                 BlueBrick.push({ posX, posY });
             }
+            else if (tile === "5") {
+                goal.push({ posX, posY });
+            }
 
         }
     }
@@ -278,8 +288,10 @@ function draw() {
     else if (currentScene === scene.game2) {
         drawGame2Levels();
         drawGame2Player();
-        applyGravity();
+
+
         playerInput();
+        applyGravity();
     }
 }
 
@@ -368,12 +380,13 @@ function keyPressed() {
         }
     }
 
+    //game2 jumping
     if (currentScene === scene.game2) {
+        // player only can jump when he stands on a platform
         if (keyCode === 32 && game2Player.onTheGround && !game2Player.isJumping) {
+            game2Player.onTheGround = false;
             game2Player.velocity = game2Player.jumpHeight;
-            //console.log(game2Player.velocity);
             game2Player.isJumping = true;
-            // game2Player.onTheGround = false;
         }
     }
 
@@ -449,6 +462,11 @@ function drawPlayer() {
     image(egg, playerX, playerY, tileSize, tileSize, 0, 0, egg.width, egg.height);
 }
 
+/**
+ * this function is the second version 
+ * in the first version calculation should divide into Math.ceil and Math.floor, but it will bring some problems
+ * and this collision check allows user to move more flexibly 
+ */
 function isPlayerCollide(x, y, type, direction) {
 
     let gridX;
@@ -458,6 +476,8 @@ function isPlayerCollide(x, y, type, direction) {
         //calculate the player position in txt(grid)
         gridX = Math.round((x - offsetX + buffer) / tileSize);
         gridY = Math.round((y - offsetY + buffer) / tileSize);
+        //debug 
+        console.log("The input direction is:", direction);
     }
 
 
@@ -628,6 +648,7 @@ function playerInput() {
         if (currentScene === scene.game2) {
             newPositionX = game2Player.playerX + game2Player.moveSpeed;
             newPositionY = game2Player.playerY;
+
 
             if (game2CanMove(newPositionX, newPositionY)) {
                 game2Player.playerX = newPositionX;
@@ -890,11 +911,16 @@ function drawGame2Player() {
     push();
     noStroke();
     fill(game2Player.R, game2Player.G, game2Player.B);
-    rect(game2Player.playerX, game2Player.playerY, game2Map.tileSize, game2Map.tileSize);
+    rect(game2Player.playerX, game2Player.playerY, game2Map.tileSize, game2Map.tileSize, 20);
     pop();
 
 }
 
+/**
+ * Game2 Collision checking 
+ * In this game, player's movement need more accuracy
+ * but there will be some collision problem when the map size change 
+ */
 function game2CanMove(newX, newY) {
     let bricksLength = walls.length;
     let redLength = RedBrick.length;
@@ -908,8 +934,9 @@ function game2CanMove(newX, newY) {
             newX + game2Map.tileSize > wall.posX &&
             newY < wall.posY + game2Map.tileSize &&
             newY + game2Map.tileSize > wall.posY) {
-            return false
+            return false;
         }
+
     }
 
 
@@ -926,8 +953,10 @@ function game2CanMove(newX, newY) {
                 game2Player.R = 240;
                 game2Player.G = 0;
                 game2Player.B = 0;
+                return false;
             }
             else {
+
                 return false;
             }
 
@@ -948,6 +977,7 @@ function game2CanMove(newX, newY) {
                 game2Player.R = 0;
                 game2Player.G = 240;
                 game2Player.B = 0;
+                return true;
             }
             else {
                 return false;
@@ -969,6 +999,7 @@ function game2CanMove(newX, newY) {
                 game2Player.R = 0;
                 game2Player.G = 0;
                 game2Player.B = 240;
+                return true;
             }
             else {
                 return false;
@@ -987,6 +1018,7 @@ function game2CanMove(newX, newY) {
                 game2Player.R = 120;
                 game2Player.G = 120;
                 game2Player.B = 120;
+                return true;
             }
             else if (game2Player.R === 120) {
                 return true;
@@ -995,26 +1027,28 @@ function game2CanMove(newX, newY) {
         }
     }
 
-    return true
+    return true;
 
 
 
 }
 
+
+
+//gravity
 function applyGravity() {
     let newPositionY
     if (!game2Player.isJumping) {
         newPositionY = game2Player.playerY + 0.1;
         if (game2CanMove(game2Player.playerX, newPositionY)) {
-
             game2Player.velocity += game2Player.gravity;
             game2Player.playerY += game2Player.velocity;
             game2Player.onTheGround = false;
         }
         else {
-            game2Player.onTheGround = true;
-            //game2Player.isJumping = false;
             game2Player.velocity = 0;
+            game2Player.onTheGround = true;
+            game2Player.isJumping = false;
             game2Player.playerY = Math.floor(game2Player.playerY / game2Map.tileSize) * game2Map.tileSize;
         }
     }
@@ -1030,14 +1064,9 @@ function applyGravity() {
             game2Player.onTheGround = true;
             game2Player.isJumping = false;
             game2Player.velocity = 0;
-            game2Player.playerY = Math.floor(game2Player.playerY / game2Map.tileSize) * game2Map.tileSize;
         }
     }
-
-
-
 }
-
 
 
 
