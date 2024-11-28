@@ -57,7 +57,7 @@ let centerY;
  * ending
  */
 
-let tileSize = 80;
+let tileSize = 1;
 let firstGameLevelData = [];
 let rows;
 let cols;
@@ -106,11 +106,14 @@ let ending = 0;
 
 /**
      * game2
-     * map 
+     * map icon 
      * player 
      */
 
 let secondGameLevelData = [];
+let secondGameLevelData2 = [];
+
+let flag;
 
 let game2Map = {
     rows: undefined,
@@ -152,6 +155,75 @@ let goal = [];
 let game2Level = 1;
 
 
+/**
+ * game 3 
+ * player
+ * map
+ */
+
+let thirdGameLevelData1 = [];
+
+let game3Players = {
+
+    //player position
+    player1X: undefined,
+    player1Y: undefined,
+    player2X: undefined,
+    player2Y: undefined,
+
+    //player 1 color 
+    player1Color: {
+
+        R: 230,
+        G: 28,
+        B: 23,
+    },
+
+    //player 2 color 
+    player2Color: {
+        R: 45,
+        G: 50,
+        B: 230,
+    },
+
+    //move speed 
+    moveSpeed: 4,
+
+
+}
+
+let game3Map = {
+    rows: undefined,
+    cols: undefined,
+
+    //try to fit the canvas size
+    tileSize: undefined,
+
+    offsetX: undefined,
+    offsetY: undefined,
+}
+
+//level 
+let game3Level = 1;
+
+//bricks number 
+let game3bricks = [];
+
+let mechanisms = [];
+let doors = []
+
+//label 
+let labels = ["A", "B", "C", "D", "E", "F", "G"];
+
+//label color 
+let labelsColor = {
+    A: "#D32EE6",
+};
+
+
+
+
+
 
 
 
@@ -170,6 +242,11 @@ function preload() {
     //game 2 
     secondGameLevelData = loadStrings('../assets/levels/2-level.txt');
     secondGameLevelData2 = loadStrings('../assets/levels/2-level2.txt');
+    flag = loadImage("../assets/images/flag.png");
+
+
+    //game 3 
+    thirdGameLevelData1 = loadStrings('../assets/levels/3-level.txt');
 }
 
 
@@ -183,7 +260,7 @@ function setup() {
      * menu
      */
     //set default scene to menu
-    currentScene = scene.game2;
+    currentScene = scene.game3;
 
     //calculate text location
     let interval = height / 3
@@ -256,12 +333,69 @@ function setup() {
         }
     }
 
+    /**
+     * game3 
+     * label color
+     */
+
+    //load map1 as default
+    game3Map.rows = thirdGameLevelData1.length;
+    game3Map.cols = thirdGameLevelData1[0].length;
+
+
+    //try to fit the canvas size
+    game3Map.tileSize = min(width / game3Map.cols, height / game3Map.rows);
+
+    game3Map.offsetX = (width - game3Map.cols * game3Map.tileSize) / 2;
+    game3Map.offsetY = (height - game3Map.rows * game3Map.tileSize) / 2;
+
+    //get all bricks position
+    for (let y = 0; y < game3Map.rows; y++) {
+        let colLength = thirdGameLevelData1[y].length;
+        for (let x = 0; x < colLength; x++) {
+            let tile = thirdGameLevelData1[y][x];
+            let posX = x * game3Map.tileSize + game3Map.offsetX;
+            let posY = y * game3Map.tileSize + game3Map.offsetY;
+            if (tile === "#") {
+                // walls 
+                game3bricks.push({ posX, posY });
+            }
+            else if (tile === " ") {
+                continue;
+            }
+            //player 1 position 
+            else if (tile === "1") {
+                game3Players.player1X = posX;
+                game3Players.player1Y = posY;
+            }
+            //player 2 position 
+            else if (tile === "2") {
+                game3Players.player2X = posX;
+                game3Players.player2Y = posY;
+            }
+
+            //mechanisms and doors
+            for (let lb of labels) {
+                let lowerCaseLB = lb.toLowerCase();
+                if (tile === lb) {
+                    mechanisms.push({ label: lb, posX, posY });
+                }
+                else if (tile === lowerCaseLB) {
+                    doors.push({ label: lb, posX, posY });
+                }
+            }
+
+
+
+        }
+    }
+
 
 
 
 
     //debug 
-    console.log(rows, cols, tileSize);
+    //console.log(rows, cols, tileSize);
 
 }
 
@@ -288,10 +422,16 @@ function draw() {
     else if (currentScene === scene.game2) {
         drawGame2Levels();
         drawGame2Player();
-
-
         playerInput();
         applyGravity();
+    }
+    else if (currentScene === scene.gameOver2) {
+        drawGame2OverText();
+    }
+    else if (currentScene === scene.game3) {
+        drawGame3Level();
+        drawPlayerOne();
+        drawPlayerTwo();
     }
 }
 
@@ -305,8 +445,8 @@ function drawMenu() {
     textAlign(CENTER, CENTER);
     textSize(100);
     fill(0, 0, 0);
-    text("game1", textLocation.center, textLocation.top);
-    text("game2", textLocation.center, textLocation.middle);
+    text("Eggcho", textLocation.center, textLocation.top);
+    text("Chameleon", textLocation.center, textLocation.middle);
     text("game3", textLocation.center, textLocation.bottom);
     pop();
 
@@ -359,6 +499,21 @@ function keyPressed() {
                 userChoice += 1;
             }
         }
+
+        if (keyCode === ENTER) {
+            if (userChoice === 1) {
+                currentScene = scene.game1;
+                return;
+            }
+            else if (userchoice === 2) {
+                currentScene = scene.game2;
+                return;
+            }
+            else if (userchoice === 3) {
+                currentScene = scene.game3;
+                return;
+            }
+        }
     }
 
     if (currentScene === scene.gameOver1) {
@@ -390,6 +545,45 @@ function keyPressed() {
         }
     }
 
+
+    //game2 game over choose 
+    if (currentScene === scene.gameOver2) {
+        if (game2Level === 1) {
+
+            if (keyCode === ESCAPE) {
+                //back to menu and reset to first level
+                game2Level = 1;
+                ReloadLevels();
+                currentScene = scene.menu;
+                return;
+                //console.log("ESC");
+            }
+            else if (keyCode === ENTER) {
+
+                //load next level
+                game2Level = 2;
+                ReloadLevels();
+                currentScene = scene.game2;
+                return;
+
+                //console.log("ENTER");
+            }
+        }
+        if (game2Level === 2) {
+            if (keyCode === ENTER) {
+
+                //back to menu and reset to first level
+                currentScene = scene.menu;
+                game2Level = 1;
+                ReloadLevels();
+                return;
+                //console.log("ENTER")
+
+            }
+        }
+    }
+
+
 }
 
 /**
@@ -404,6 +598,8 @@ function keyReleased() {
             activeEchoWave = true;
         }
     }
+
+
 }
 
 
@@ -862,6 +1058,8 @@ function drawGame2Levels() {
         drawColorBlock(greyBrick[i].posX, greyBrick[i].posY, game2Map.tileSize, "grey");
     }
 
+    drawColorBlock(goal[0].posX, goal[0].posY, game2Map.tileSize, "flag");
+
 }
 
 
@@ -903,6 +1101,11 @@ function drawColorBlock(x, y, Size, type) {
             rect(x, y, Size, Size);
             pop();
             break;
+
+        case "flag":
+            //goal 
+            image(flag, x, y, Size, Size, 0, 0, flag.width, flag.height);
+
     }
 
 }
@@ -1027,6 +1230,20 @@ function game2CanMove(newX, newY) {
         }
     }
 
+
+    let brick = goal[0];
+    if (newX < brick.posX + game2Map.tileSize &&
+        newX + game2Map.tileSize > brick.posX &&
+        newY < brick.posY + game2Map.tileSize &&
+        newY + game2Map.tileSize > brick.posY) {
+
+        //debug
+        //console.log("reach the flag");
+        currentScene = scene.gameOver2;
+
+        return true;
+    }
+
     return true;
 
 
@@ -1068,6 +1285,226 @@ function applyGravity() {
     }
 }
 
+//game2 game over text 
+function drawGame2OverText() {
+    background(232, 117, 46);
 
+
+    if (game2Level === 1) {
+
+        //ending text
+        push();
+        textSize(100);
+        textAlign(CENTER, CENTER);
+        textWrap(WORD);
+        fill(0, 0, 0);
+        text("Congratulations", width / 2 / 2.4, height / 2.7, 800);
+        pop();
+
+        //continue text 
+        push();
+        textSize(35);
+        textAlign(CENTER, CENTER);
+        fill(0, 0, 0);
+        text("Press 'ENTER' to next level", width / 2, height / 1.6);
+        text("Press 'ESC' back to menu", width / 2, height / 1.4);
+        pop();
+    }
+    else if (game2Level === 2) {
+
+        //ending text
+        push();
+        textSize(100);
+        textAlign(CENTER, CENTER);
+        textWrap(WORD);
+        fill(0, 0, 0);
+        text("Congratulations", width / 2 / 2, height / 2.7, 800);
+        pop();
+
+        //continue text 
+        push();
+        textSize(35);
+        textAlign(CENTER, CENTER);
+        fill(0, 0, 0);
+        text("Press 'ENTER' back to menu", width / 2, height / 1.6);
+        pop();
+    }
+
+}
+
+//loading levels 
+function ReloadLevels() {
+    //delete all the map data
+    walls = [];
+    RedBrick = [];
+    GreenBrick = [];
+    BlueBrick = [];
+    greyBrick = [];
+    goal = [];
+
+
+    switch (game2Level) {
+        case 1:
+            //load map1 as default
+            game2Map.rows = secondGameLevelData.length;
+            game2Map.cols = secondGameLevelData[0].length;
+
+            //try to fit the canvas size
+            game2Map.tileSize = min(width / game2Map.cols, height / game2Map.rows);
+
+            game2Map.offsetX = (width - game2Map.cols * game2Map.tileSize) / 2;
+            game2Map.offsetY = (height - game2Map.rows * game2Map.tileSize) / 2;
+
+            //get all bricks position
+            for (let y = 0; y < game2Map.rows; y++) {
+                let colLength = secondGameLevelData[y].length;
+                for (let x = 0; x < colLength; x++) {
+                    let tile = secondGameLevelData[y][x];
+                    let posX = x * game2Map.tileSize + game2Map.offsetX;
+                    let posY = y * game2Map.tileSize + game2Map.offsetY;
+                    if (tile === "#") {
+                        // walls 
+                        walls.push({ posX, posY });
+                    }
+                    else if (tile === "1") {
+                        game2Player.originX = posX;
+                        game2Player.originY = posY;
+                        game2Player.playerX = posX;
+                        game2Player.playerY = posY;
+                    }
+                    else if (tile === " ") {
+                        continue;
+                    }
+                    else if (tile === "0") {
+                        greyBrick.push({ posX, posY });
+                    }
+                    else if (tile === "2") {
+                        RedBrick.push({ posX, posY });
+                    }
+                    else if (tile === "3") {
+                        GreenBrick.push({ posX, posY });
+                    }
+                    else if (tile === "4") {
+                        BlueBrick.push({ posX, posY });
+                    }
+                    else if (tile === "5") {
+                        goal.push({ posX, posY });
+                    }
+
+                }
+            }
+            break;
+
+        case 2:
+            //load map1 as default
+            game2Map.rows = secondGameLevelData2.length;
+            game2Map.cols = secondGameLevelData2[0].length;
+
+            //try to fit the canvas size
+            game2Map.tileSize = min(width / game2Map.cols, height / game2Map.rows);
+
+            game2Map.offsetX = (width - game2Map.cols * game2Map.tileSize) / 2;
+            game2Map.offsetY = (height - game2Map.rows * game2Map.tileSize) / 2;
+
+            //get all bricks position
+            for (let y = 0; y < game2Map.rows; y++) {
+                let colLength = secondGameLevelData2[y].length;
+                for (let x = 0; x < colLength; x++) {
+                    let tile = secondGameLevelData2[y][x];
+                    let posX = x * game2Map.tileSize + game2Map.offsetX;
+                    let posY = y * game2Map.tileSize + game2Map.offsetY;
+                    if (tile === "#") {
+                        // walls 
+                        walls.push({ posX, posY });
+                    }
+                    else if (tile === "1") {
+                        game2Player.originX = posX;
+                        game2Player.originY = posY;
+                        game2Player.playerX = posX;
+                        game2Player.playerY = posY;
+                    }
+                    else if (tile === " ") {
+                        continue;
+                    }
+                    else if (tile === "0") {
+                        greyBrick.push({ posX, posY });
+                    }
+                    else if (tile === "2") {
+                        RedBrick.push({ posX, posY });
+                    }
+                    else if (tile === "3") {
+                        GreenBrick.push({ posX, posY });
+                    }
+                    else if (tile === "4") {
+                        BlueBrick.push({ posX, posY });
+                    }
+                    else if (tile === "5") {
+                        goal.push({ posX, posY });
+                    }
+
+                }
+            }
+            break;
+
+    }
+}
+
+
+/**
+ * game 3 function 
+ */
+
+function drawGame3Level() {
+    //background 
+    background(230);
+
+    let brickLength = game3bricks.length;
+    let mechanismLength = mechanisms.length;
+    let doorLength = doors.length;
+    for (let i = 0; i < brickLength; i++) {
+        drawWall(game3bricks[i].posX, game3bricks[i].posY, game3Map.tileSize);
+    }
+
+    for (let i = 0; i < mechanismLength; i++) {
+        drawMechanism(mechanisms[i].posX, mechanisms[i].posY, game3Map.tileSize, mechanisms[i].label);
+    }
+
+    for (let i = 0; i < doorLength; i++) {
+        drawDoor(doors[i].posX, doors[i].posY, game3Map.tileSize, doors[i].label);
+    }
+}
+
+function drawMechanism(x, y, Size, label) {
+    push();
+    stroke(120);
+    strokeWeight(Size / 3);
+    fill(labelsColor[label]);
+    rect(x, y, Size, Size);
+    pop();
+}
+
+function drawDoor(x, y, Size, label) {
+    push();
+    fill(labelsColor[label]);
+    rect(x, y, Size, Size);
+    pop();
+}
+
+
+function drawPlayerOne() {
+    push();
+    noStroke();
+    fill(game3Players.player1Color.R, game3Players.player1Color.G, game3Players.player1Color.B);
+    rect(game3Players.player1X, game3Players.player1Y, game3Map.tileSize, game3Map.tileSize, 20);
+    pop();
+}
+
+function drawPlayerTwo() {
+    push();
+    noStroke();
+    fill(game3Players.player2Color.R, game3Players.player2Color.G, game3Players.player2Color.B);
+    rect(game3Players.player2X, game3Players.player2Y, game3Map.tileSize, game3Map.tileSize, 20);
+    pop();
+}
 
 
