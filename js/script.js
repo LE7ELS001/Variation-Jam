@@ -192,6 +192,9 @@ let game3Players = {
 
 }
 
+let Player1ActivedMechanism = null;
+let Player2ActivedMechanism = null;
+
 let game3Map = {
     rows: undefined,
     cols: undefined,
@@ -381,7 +384,7 @@ function setup() {
                     mechanisms.push({ label: lb, posX, posY });
                 }
                 else if (tile === lowerCaseLB) {
-                    doors.push({ label: lb, posX, posY });
+                    doors.push({ label: lb, posX, posY, isOpen: false });
                 }
             }
 
@@ -432,6 +435,12 @@ function draw() {
         drawGame3Level();
         drawPlayerOne();
         drawPlayerTwo();
+        playerInput();
+        triggerDetection1(game3Players.player1X, game3Players.player1Y);
+        // triggerDetection(game3Players.player2X, game3Players.player2Y);
+
+        //check player collision
+
     }
 }
 
@@ -780,6 +789,10 @@ function playerInput() {
     let newPositionX;
     let newPositionY;
 
+    //for another player in game3
+    let newPositionX2;
+    let newPositionY2;
+
 
 
     if (keyIsDown(LEFT_ARROW)) {
@@ -821,6 +834,17 @@ function playerInput() {
 
         }
 
+        //game3 player2 
+        if (currentScene === scene.game3) {
+            newPositionX = game3Players.player2X - game3Players.moveSpeed;
+            newPositionY = game3Players.player2Y;
+
+            if (game3CanMove(newPositionX, newPositionY, "left")) {
+
+                game3Players.player2X = newPositionX;
+            }
+        }
+
 
     }
 
@@ -854,6 +878,17 @@ function playerInput() {
 
 
         }
+
+        //game3 player 2 
+        if (currentScene === scene.game3) {
+            newPositionX = game3Players.player2X + game3Players.moveSpeed;
+            newPositionY = game3Players.player2Y;
+
+            if (game3CanMove(newPositionX, newPositionY, "right")) {
+
+                game3Players.player2X = newPositionX;
+            }
+        }
     }
 
     if (keyIsDown(UP_ARROW)) {
@@ -878,6 +913,17 @@ function playerInput() {
                 currentScene = scene.gameOver1;
                 // which ending player has 
                 ending = 7;
+            }
+        }
+
+        //game3 player 2 
+        if (currentScene === scene.game3) {
+
+            newPositionX = game3Players.player2X;
+            newPositionY = game3Players.player2Y - game3Players.moveSpeed;
+            if (game3CanMove(newPositionX, newPositionY, "up")) {
+
+                game3Players.player2Y = newPositionY;
             }
         }
 
@@ -911,19 +957,87 @@ function playerInput() {
             }
         }
 
-        if (currentScene === scene.game2) {
-            newPositionX = game2Player.playerX
-            newPositionY = game2Player.playerY + game2Player.moveSpeed;
+        // if (currentScene === scene.game2) {
+        //     newPositionX = game2Player.playerX
+        //     newPositionY = game2Player.playerY + game2Player.moveSpeed;
 
-            if (game2CanMove(newPositionX, newPositionY)) {
-                game2Player.playerY = newPositionY;
+        //     if (game2CanMove(newPositionX, newPositionY)) {
+        //         game2Player.playerY = newPositionY;
 
+        //     }
+
+
+
+        // }
+
+        //game3 player 2 
+        if (currentScene === scene.game3) {
+            newPositionX = game3Players.player2X;
+            newPositionY = game3Players.player2Y + game3Players.moveSpeed;
+            if (game3CanMove(newPositionX, newPositionY, "down")) {
+
+                game3Players.player2Y = newPositionY;
             }
-
-
-
         }
 
+    }
+
+
+    /**
+     * Game3 Player1 control
+     */
+
+    // A key 
+    if (keyIsDown(65)) {
+        if (currentScene === scene.game3) {
+
+
+            newPositionX2 = game3Players.player1X - game3Players.moveSpeed;
+            newPositionY2 = game3Players.player1Y;
+
+            if (game3CanMove(newPositionX2, newPositionY2, "a")) {
+
+                game3Players.player1X = newPositionX2;
+            }
+        }
+    }
+
+    //D key 
+    if (keyIsDown(68)) {
+        if (currentScene === scene.game3) {
+            newPositionX2 = game3Players.player1X + game3Players.moveSpeed;
+            newPositionY2 = game3Players.player1Y;
+
+            if (game3CanMove(newPositionX2, newPositionY2, "d")) {
+
+                game3Players.player1X = newPositionX2;
+            }
+        }
+
+    }
+
+    //W key 
+    if (keyIsDown(87)) {
+        if (currentScene === scene.game3) {
+
+            newPositionX2 = game3Players.player1X;
+            newPositionY2 = game3Players.player1Y - game3Players.moveSpeed;
+            if (game3CanMove(newPositionX2, newPositionY2, "w")) {
+
+                game3Players.player1Y = newPositionY2;
+            }
+        }
+    }
+
+    if (keyIsDown(83)) {
+        if (currentScene === scene.game3) {
+            newPositionX = game3Players.player1X;
+            newPositionY = game3Players.player1Y + game3Players.moveSpeed;
+            if (game3CanMove(newPositionX, newPositionY, "s")) {
+
+                game3Players.player1Y = newPositionY;
+            }
+        }
     }
 
 
@@ -1474,15 +1588,22 @@ function drawGame3Level() {
     }
 }
 
+//mechanism
 function drawMechanism(x, y, Size, label) {
     push();
-    stroke(120);
-    strokeWeight(Size / 3);
-    fill(labelsColor[label]);
+    noStroke();
+    fill(120);
     rect(x, y, Size, Size);
+    pop();
+
+    push();
+    noStroke();
+    fill(labelsColor[label]);
+    ellipse(x + Size / 2, y + Size / 2, Size / 1.5, Size / 1.5);
     pop();
 }
 
+//door
 function drawDoor(x, y, Size, label) {
     push();
     fill(labelsColor[label]);
@@ -1490,7 +1611,7 @@ function drawDoor(x, y, Size, label) {
     pop();
 }
 
-
+//player 1
 function drawPlayerOne() {
     push();
     noStroke();
@@ -1499,6 +1620,7 @@ function drawPlayerOne() {
     pop();
 }
 
+//player 2 
 function drawPlayerTwo() {
     push();
     noStroke();
@@ -1506,5 +1628,123 @@ function drawPlayerTwo() {
     rect(game3Players.player2X, game3Players.player2Y, game3Map.tileSize, game3Map.tileSize, 20);
     pop();
 }
+
+//Collision (current location)
+function game3CollisionCheck(x, y) {
+
+    let gridX;
+    let gridY;
+    let buffer = 2;
+
+
+    //calculate the player position in txt(grid)
+    gridX = Math.round((x - game3Map.offsetX + buffer) / game3Map.tileSize);
+    gridY = Math.round((y - game3Map.offsetY + buffer) / game3Map.tileSize);
+
+    if (gridX >= 0 && gridX < cols && gridY >= 0 && gridY < rows) {
+
+        //check what type of tile 
+        let tile = thirdGameLevelData1[gridY][gridX];
+
+        //collide with mechanisms 
+        for (let mechanism of mechanisms) {
+            if (tile === mechanism.label) {
+                return { isCollide: true, label: mechanism.label, type: "mechanism" };
+            }
+        }
+
+        //collide with doors
+        for (let door of doors) {
+            let tmpLabel = door.label.toLowerCase();
+            if (tile === tmpLabel) {
+                return { isCollide: true, label: door.label, type: "door" }
+            }
+        }
+
+        return { isCollide: false, label: null, type: "empty" };
+    }
+}
+
+
+
+/**
+ * check player can move or not 
+ * only walls and closing door will stop player
+ */
+function game3CanMove(x, y, direction) {
+    let gridX;
+    let gridY;
+    let buffer = 2;
+
+    //calculate the player position in txt(grid)
+    gridX = Math.round((x - game3Map.offsetX + buffer) / game3Map.tileSize);
+    gridY = Math.round((y - game3Map.offsetY + buffer) / game3Map.tileSize);
+
+    //debug 
+    //console.log("The input direction is:", direction);
+
+
+    //check type of tile
+    let tile = thirdGameLevelData1[gridY][gridX];
+
+    //walls
+    if (tile === "#") {
+        return false;
+    }
+
+    // doors
+    for (let door of doors) {
+        let tmpLabel = door.label.toLowerCase();
+        if (tile === tmpLabel) {
+            //debug
+            console.log(door.isOpen)
+
+
+            if (door.isOpen) {
+                //player can move 
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function triggerDetection1(x, y) {
+    let overlap = game3CollisionCheck(x, y);
+    if (overlap.type === "mechanism") {
+
+        if (Player1ActivedMechanism !== overlap.label) {
+            Player1ActivedMechanism = overlap.label;
+
+            for (let door of doors) {
+                if (door.label === overlap.label) {
+                    door.isOpen = true;
+                    console.log(door);
+                }
+            }
+        }
+    }
+    else {
+        if (Player1ActivedMechanism !== null) {
+            for (let door of doors) {
+                if (door.label === Player1ActivedMechanism) {
+                    door.isOpen = false;
+                    console.log(door);
+                }
+            }
+        }
+        Player1ActivedMechanism = null;
+    }
+}
+
+
+
+
+
+
 
 
