@@ -2,7 +2,32 @@
  * Variation-Jam
  * Junming He
  * 
+ * 
+ * use UP-ARROW and DOWN-ARROW to choose the game, press ENTER to start
+ * 
+ * game 1 :
+ * use UP-ARROW, DOWN-ARROW, LEFT-ARROW, RIGHT-ARROW to move 
+ * press SPACE key to use echo to see the path 
+ * multiple ending
+ * have fun
+ * 
+ * game 2: 
+ * use LEFT-ARROW, RIGHT-ARROW to move
+ * press SPACE key to jump 
+ * When your character is gray, touching the red, blue, or green corresponding tiles will change your character to that respective color.
+ * You can pass through tiles of the same color but will be blocked by tiles of different colors. Touching a gray tile will turn you back to gray.
+ * there are 2 levels 
+ * have fun
+ * 
+ * game 3 
+ * Recommended for two players (but you can play solo, of course).
+ * use W A S D to move player 1; use UP-ARROW, DOWN-ARROW, LEFT-ARROW, RIGHT-ARROW to move player 2
+ * when your character touch the mechanism floor, the relevant door will open 
+ * two players need to reach the destination together to win 
+ * have fun 
+ *  
  */
+
 
 "use strict";
 
@@ -1017,18 +1042,6 @@ function playerInput() {
             }
         }
 
-        // if (currentScene === scene.game2) {
-        //     newPositionX = game2Player.playerX
-        //     newPositionY = game2Player.playerY + game2Player.moveSpeed;
-
-        //     if (game2CanMove(newPositionX, newPositionY)) {
-        //         game2Player.playerY = newPositionY;
-
-        //     }
-
-
-
-        // }
 
         //game3 player 2 
         if (currentScene === scene.game3) {
@@ -1286,7 +1299,8 @@ function drawColorBlock(x, y, Size, type) {
 
 function drawGame2Player() {
     push();
-    noStroke();
+    stroke(0);
+    strokeWeight(1);
     fill(game2Player.R, game2Player.G, game2Player.B);
     rect(game2Player.playerX, game2Player.playerY, game2Map.tileSize, game2Map.tileSize, 20);
     pop();
