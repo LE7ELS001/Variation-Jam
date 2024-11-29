@@ -26,7 +26,8 @@ let scene = {
     gameOver1: "gameOver1",
     game2: "game2",
     gameOver2: "gameOver2",
-    game3: "game3"
+    game3: "game3",
+    gameOver3: "gameOver3"
 }
 
 let currentScene;
@@ -68,7 +69,7 @@ let playerY;
 
 let isFirstTime = true;
 let isCollideWithWall = false;
-let playerMoveSpeed = 5;
+let playerMoveSpeed = 2.7;
 let isPlayerMove = true;
 
 let isFirstTimeCalculate = true;
@@ -187,7 +188,7 @@ let game3Players = {
     },
 
     //move speed 
-    moveSpeed: 4,
+    moveSpeed: 2,
 
 
 }
@@ -195,8 +196,11 @@ let game3Players = {
 let player1ActivedMechanism = null;
 let player1StandInDoor = null;
 
-let Player2ActivedMechanism = null;
+let player2ActivedMechanism = null;
 let player2StandInDoor = null;
+
+let player1ReachDestination = false;
+let player2ReachDestination = false;
 
 let game3Map = {
     rows: undefined,
@@ -209,22 +213,52 @@ let game3Map = {
     offsetY: undefined,
 }
 
-//level 
-let game3Level = 1;
+//image
+let treasure;
 
-//bricks number 
+//level 
+let game3Level = 2;
+
+//bricks 
 let game3bricks = [];
+let destinations = [];
 
 let mechanisms = [];
 let doors = []
 
 //label 
-let labels = ["A", "B", "C", "D", "E", "F", "G"];
+let labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
 
-//label color 
-let labelsColor = {
-    A: "#D32EE6",
+//label color for door
+let labelsDoorColor = {
+
+    A: { R: 211, G: 46, B: 230, A: 255 },
+    B: { R: 104, G: 32, B: 245, A: 255 },
+    C: { R: 42, G: 187, B: 245, A: 255 },
+    D: { R: 66, G: 245, B: 184, A: 255 },
+    E: { R: 70, G: 245, B: 32, A: 255 },
+    F: { R: 244, G: 135, B: 26, A: 255 },
+    G: { R: 244, G: 89, B: 61, A: 255 },
+    H: { R: 245, G: 27, B: 141, A: 255 },
+    I: { R: 203, G: 245, B: 76, A: 255 },
 };
+
+//label color for mechanism 
+let labelsMechanismColor = {
+
+    A: "rgb(211, 46, 230)",
+    B: "rgb(104,32,245)",
+    C: "rgb(42,187,245)",
+    D: "rgb(66,245,184)",
+    E: "rgb(70,245,32)",
+    F: "rgb(244,135,26)",
+    G: "rgb(244,89,61)",
+    H: "rgb(245,27,141)",
+    I: "rgb(203,245,76)",
+};
+
+
+let doorAnimationSpeed = 5;
 
 
 
@@ -253,6 +287,7 @@ function preload() {
 
     //game 3 
     thirdGameLevelData1 = loadStrings('../assets/levels/3-level.txt');
+    treasure = loadImage("../assets/images/Treasure_Chest.png");
 }
 
 
@@ -266,7 +301,8 @@ function setup() {
      * menu
      */
     //set default scene to menu
-    currentScene = scene.game3;
+    currentScene = scene.menu;
+
 
     //calculate text location
     let interval = height / 3
@@ -369,6 +405,9 @@ function setup() {
             else if (tile === " ") {
                 continue;
             }
+            else if (tile === "0") {
+                destinations.push({ posX, posY });
+            }
             //player 1 position 
             else if (tile === "1") {
                 game3Players.player1X = posX;
@@ -395,6 +434,7 @@ function setup() {
 
         }
     }
+
 
 
 
@@ -439,8 +479,12 @@ function draw() {
         drawPlayerOne();
         drawPlayerTwo();
         playerInput();
-        triggerDetection1(game3Players.player1X, game3Players.player1Y);
-        // triggerDetection(game3Players.player2X, game3Players.player2Y);
+        triggerDetection(game3Players.player1X, game3Players.player1Y, 1);
+        triggerDetection(game3Players.player2X, game3Players.player2Y, 2);
+        doorAnimation();
+        GameOver3();
+        //console.log(player1ReachDestination);
+
 
         //check player collision
 
@@ -459,7 +503,7 @@ function drawMenu() {
     fill(0, 0, 0);
     text("Eggcho", textLocation.center, textLocation.top);
     text("Chameleon", textLocation.center, textLocation.middle);
-    text("game3", textLocation.center, textLocation.bottom);
+    text("Treasure", textLocation.center, textLocation.bottom);
     pop();
 
 }
@@ -517,11 +561,11 @@ function keyPressed() {
                 currentScene = scene.game1;
                 return;
             }
-            else if (userchoice === 2) {
+            else if (userChoice === 2) {
                 currentScene = scene.game2;
                 return;
             }
-            else if (userchoice === 3) {
+            else if (userChoice === 3) {
                 currentScene = scene.game3;
                 return;
             }
@@ -592,6 +636,18 @@ function keyPressed() {
                 //console.log("ENTER")
 
             }
+        }
+    }
+
+    //game3 game over choose 
+    if (currentScene === scene.gameOver3) {
+        if (keyCode === ENTER) {
+
+            //back to menu 
+            currentScene = scene.menu;
+            return;
+            //console.log("ENTER")
+
         }
     }
 
@@ -684,8 +740,9 @@ function isPlayerCollide(x, y, type, direction) {
         //calculate the player position in txt(grid)
         gridX = Math.round((x - offsetX + buffer) / tileSize);
         gridY = Math.round((y - offsetY + buffer) / tileSize);
-        //debug 
-        console.log("The input direction is:", direction);
+
+        //debug
+        //console.log("The input direction is:", direction);
     }
 
 
@@ -1573,11 +1630,12 @@ function ReloadLevels() {
 
 function drawGame3Level() {
     //background 
-    background(230);
+    background(224, 204, 150);
 
     let brickLength = game3bricks.length;
     let mechanismLength = mechanisms.length;
     let doorLength = doors.length;
+    let destinationLength = destinations.length;
     for (let i = 0; i < brickLength; i++) {
         drawWall(game3bricks[i].posX, game3bricks[i].posY, game3Map.tileSize);
     }
@@ -1588,6 +1646,10 @@ function drawGame3Level() {
 
     for (let i = 0; i < doorLength; i++) {
         drawDoor(doors[i].posX, doors[i].posY, game3Map.tileSize, doors[i].label);
+    }
+
+    for (let i = 0; i < destinationLength; i++) {
+        drawTreasure(destinations[i].posX, destinations[i].posY, treasure);
     }
 }
 
@@ -1601,23 +1663,28 @@ function drawMechanism(x, y, Size, label) {
 
     push();
     noStroke();
-    fill(labelsColor[label]);
+    fill(labelsMechanismColor[label]);
     ellipse(x + Size / 2, y + Size / 2, Size / 1.5, Size / 1.5);
     pop();
 }
 
 //door
 function drawDoor(x, y, Size, label) {
+    let tmp = labelsDoorColor[label];
     push();
-    fill(labelsColor[label]);
+    noStroke();
+    fill(tmp.R, tmp.G, tmp.B, tmp.A);
     rect(x, y, Size, Size);
     pop();
 }
 
+
+
 //player 1
 function drawPlayerOne() {
     push();
-    noStroke();
+    stroke(0);
+    strokeWeight(1);
     fill(game3Players.player1Color.R, game3Players.player1Color.G, game3Players.player1Color.B);
     rect(game3Players.player1X, game3Players.player1Y, game3Map.tileSize, game3Map.tileSize, 20);
     pop();
@@ -1626,7 +1693,8 @@ function drawPlayerOne() {
 //player 2 
 function drawPlayerTwo() {
     push();
-    noStroke();
+    stroke(0);
+    strokeWeight(1);
     fill(game3Players.player2Color.R, game3Players.player2Color.G, game3Players.player2Color.B);
     rect(game3Players.player2X, game3Players.player2Y, game3Map.tileSize, game3Map.tileSize, 20);
     pop();
@@ -1664,7 +1732,17 @@ function game3CollisionCheck(x, y) {
             }
         }
 
+        //collide with destination 
+        if (tile === "0") {
+            return { isCollide: true, label: null, type: "destination" };
+        }
+
+
         return { isCollide: false, label: null, type: "empty" };
+    } else {
+
+        //console.log("outofBounce");
+        return { isCollide: false, label: null, type: "outOfBounds" };
     }
 }
 
@@ -1700,7 +1778,7 @@ function game3CanMove(x, y, direction) {
         let tmpLabel = door.label.toLowerCase();
         if (tile === tmpLabel) {
             //debug
-            console.log(door.isOpen)
+            //console.log(door.isOpen)
 
 
             if (door.isOpen) {
@@ -1716,51 +1794,216 @@ function game3CanMove(x, y, direction) {
     return true;
 }
 
-function triggerDetection1(x, y) {
+function triggerDetection(x, y, playerNumber) {
     let overlap = game3CollisionCheck(x, y);
 
+    //player 1 
+    if (playerNumber === 1) {
 
-    if (overlap.type === "mechanism") {
+        if (overlap.type === "mechanism") {
 
-        if (player1ActivedMechanism !== overlap.label) {
-            player1ActivedMechanism = overlap.label;
+            if (player1ActivedMechanism !== overlap.label) {
+                player1ActivedMechanism = overlap.label;
 
-            for (let door of doors) {
-                if (door.label === overlap.label) {
-                    door.isOpen = true;
-                    console.log(door);
+                for (let door of doors) {
+                    if (door.label === overlap.label) {
+                        door.isOpen = true;
+                        //console.log("player1:", door);
+                    }
                 }
             }
-        }
-        player1StandInDoor = null;
-    }
-    else if (overlap.type === "door") {
-
-        if (player1StandInDoor !== overlap.label) {
-            player1StandInDoor = overlap.label;
-        }
-
-        for (let door of doors) {
-            if (door.label === overlap.label) {
-                door.isOpen = true;
-            }
-        }
-    }
-    else {
-        if (player1ActivedMechanism !== null) {
-            for (let door of doors) {
-                if (door.label === player1ActivedMechanism && player1StandInDoor !== door.label) {
-                    door.isOpen = false;
-                    console.log(door);
-                }
-            }
-        }
-        player1ActivedMechanism = null;
-
-        if (player1StandInDoor !== null) {
+            player1ReachDestination = false;
             player1StandInDoor = null;
         }
+        else if (overlap.type === "door") {
+            //player 2 away from relevant mechanism
+            if (player2ActivedMechanism !== overlap.label) {
+
+                if (player1StandInDoor !== overlap.label) {
+                    player1StandInDoor = overlap.label;
+                }
+
+                for (let door of doors) {
+                    if (door.label === overlap.label) {
+                        door.isOpen = true;
+                    }
+                }
+            }
+            player1ReachDestination = false;
+        }
+        else if (overlap.type === "destination") {
+            player1ReachDestination = true;
+            //console.log(" player1 reach finial");
+        }
+        else {
+            if (player1ActivedMechanism !== null) {
+                for (let door of doors) {
+                    if (door.label === player1ActivedMechanism) {
+                        door.isOpen = false;
+                        //console.log("Player1:", door);
+                    }
+                }
+            }
+            if (player1StandInDoor !== null) {
+                for (let door of doors) {
+                    if (door.label === player1StandInDoor) {
+                        door.isOpen = false;
+                        //console.log("Player1:", door);
+                    }
+                }
+            }
+            player1StandInDoor = null;
+            player1ActivedMechanism = null;
+            player1ReachDestination = false;
+
+        }
     }
+    //player 2 
+    else if (playerNumber === 2) {
+        console.log(overlap);
+        if (overlap.type === "mechanism") {
+
+            if (player2ActivedMechanism !== overlap.label) {
+                player2ActivedMechanism = overlap.label;
+
+                for (let door of doors) {
+                    if (door.label === overlap.label) {
+                        door.isOpen = true;
+                        //console.log("player2:", door);
+                    }
+                }
+            }
+            player2StandInDoor = null;
+            player2ReachDestination = false;
+        }
+        else if (overlap.type === "door") {
+
+            if (player1ActivedMechanism !== overlap.label) {
+
+                if (player2StandInDoor !== overlap.label) {
+                    player2StandInDoor = overlap.label;
+                }
+
+                for (let door of doors) {
+                    if (door.label === overlap.label) {
+                        door.isOpen = true;
+                    }
+                }
+            }
+            player2ReachDestination = false;
+        }
+        else if (overlap.type === "destination") {
+            player2ReachDestination = true;
+            //console.log("player2 reach finial");
+        }
+        else {
+            if (player2ActivedMechanism !== null) {
+                for (let door of doors) {
+                    if (door.label === player2ActivedMechanism) {
+                        door.isOpen = false;
+                        //console.log("Player2:", door);
+                    }
+                }
+            }
+            if (player2StandInDoor !== null) {
+                for (let door of doors) {
+                    if (door.label === player2StandInDoor) {
+                        door.isOpen = false;
+                        //console.log("Player2:", door);
+                    }
+                }
+            }
+            player2ReachDestination = false;
+            player2StandInDoor = null;
+            player2ActivedMechanism = null;
+
+        }
+    }
+}
+
+//door fading and showing
+function doorAnimation() {
+    for (let door of doors) {
+        if (door.isOpen) {
+            labelsDoorColor[door.label].A = constrain(labelsDoorColor[door.label].A, 0, 255);
+            labelsDoorColor[door.label].A -= doorAnimationSpeed;
+            //console.log("door alpha is:", labelsDoorColor[door.label].A);
+        }
+        else {
+            if (labelsDoorColor[door.label].A < 255) {
+                labelsDoorColor[door.label].A += doorAnimationSpeed;
+            }
+            else {
+                labelsDoorColor[door.label].A = 255;
+            }
+        }
+        //console.log("door alpha is:", labelsDoorColor[door.label].A);
+    }
+}
+
+
+function drawGame3OverText() {
+
+    background(255, 215, 0);
+    switch (game3Level) {
+        case 1:
+            //ending text
+            push();
+            textSize(60);
+            textAlign(CENTER, CENTER);
+            textWrap(WORD);
+            fill(0, 0, 0);
+            text("You found the treasure together", width / 2 / 2.4, height / 2.7, 800);
+            pop();
+
+            //continue text 
+            push();
+            textSize(35);
+            textAlign(CENTER, CENTER);
+            fill(0, 0, 0);
+            text("Press 'ENTER' to next level", width / 2, height / 1.6);
+            text("Press 'ESC' back to menu", width / 2, height / 1.4);
+            pop();
+            break;
+
+        /**
+         * maybe there will be a level2 in the future 
+         * 
+         *  */
+        case 2:
+            //ending text
+            push();
+            textSize(60);
+            textAlign(CENTER, CENTER);
+            textWrap(WORD);
+            fill(0, 0, 0);
+            text("You found treasure together", width / 2 / 2.4, height / 2.7, 800);
+            pop();
+
+            //continue text 
+            push();
+            textSize(35);
+            textAlign(CENTER, CENTER);
+            fill(0, 0, 0);
+            text("Press 'ENTER' back to menu", width / 2, height / 1.6);
+            pop();
+            break;
+    }
+
+
+}
+
+//game over text and statement switch
+function GameOver3() {
+    if (player1ReachDestination && player2ReachDestination) {
+        currentScene = scene.gameOver3;
+        drawGame3OverText();
+    }
+}
+
+//destination 
+function drawTreasure(x, y, photo) {
+    image(photo, x, y, game3Map.tileSize, game3Map.tileSize, 0, 0, photo.width, photo.height);
 }
 
 
