@@ -192,8 +192,11 @@ let game3Players = {
 
 }
 
-let Player1ActivedMechanism = null;
+let player1ActivedMechanism = null;
+let player1StandInDoor = null;
+
 let Player2ActivedMechanism = null;
+let player2StandInDoor = null;
 
 let game3Map = {
     rows: undefined,
@@ -1715,10 +1718,12 @@ function game3CanMove(x, y, direction) {
 
 function triggerDetection1(x, y) {
     let overlap = game3CollisionCheck(x, y);
+
+
     if (overlap.type === "mechanism") {
 
-        if (Player1ActivedMechanism !== overlap.label) {
-            Player1ActivedMechanism = overlap.label;
+        if (player1ActivedMechanism !== overlap.label) {
+            player1ActivedMechanism = overlap.label;
 
             for (let door of doors) {
                 if (door.label === overlap.label) {
@@ -1727,17 +1732,34 @@ function triggerDetection1(x, y) {
                 }
             }
         }
+        player1StandInDoor = null;
+    }
+    else if (overlap.type === "door") {
+
+        if (player1StandInDoor !== overlap.label) {
+            player1StandInDoor = overlap.label;
+        }
+
+        for (let door of doors) {
+            if (door.label === overlap.label) {
+                door.isOpen = true;
+            }
+        }
     }
     else {
-        if (Player1ActivedMechanism !== null) {
+        if (player1ActivedMechanism !== null) {
             for (let door of doors) {
-                if (door.label === Player1ActivedMechanism) {
+                if (door.label === player1ActivedMechanism && player1StandInDoor !== door.label) {
                     door.isOpen = false;
                     console.log(door);
                 }
             }
         }
-        Player1ActivedMechanism = null;
+        player1ActivedMechanism = null;
+
+        if (player1StandInDoor !== null) {
+            player1StandInDoor = null;
+        }
     }
 }
 
