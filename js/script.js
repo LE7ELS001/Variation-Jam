@@ -295,24 +295,24 @@ let doorAnimationSpeed = 5;
 //preload level / image
 function preload() {
     // game 1
-    firstGameLevelData = loadStrings("/assets/levels/level.txt");
-    egg = loadImage("/assets/images/egg.png");
-    pen = loadImage("/assets/images/pen.png");
-    plant = loadImage("/assets/images/plant.png");
-    color = loadImage("/assets/images/color.png");
-    philosophy = loadImage("/assets/images/philosophy.png");
-    chicken = loadImage("/assets/images/chicken.png");
-    spoon = loadImage("/assets/images/spoon.png");
+    firstGameLevelData = loadStrings("assets/levels/level.txt");
+    egg = loadImage("assets/images/egg.png");
+    pen = loadImage("assets/images/pen.png");
+    plant = loadImage("assets/images/plant.png");
+    color = loadImage("assets/images/color.png");
+    philosophy = loadImage("assets/images/philosophy.png");
+    chicken = loadImage("assets/images/chicken.png");
+    spoon = loadImage("assets/images/spoon.png");
 
     //game 2 
-    secondGameLevelData = loadStrings("/assets/levels/2-level.txt");
-    secondGameLevelData2 = loadStrings("/assets/levels/2-level2.txt");
-    flag = loadImage("/assets/images/flag.png");
+    secondGameLevelData = loadStrings("assets/levels/2-level.txt");
+    secondGameLevelData2 = loadStrings("assets/levels/2-level2.txt");
+    flag = loadImage("assets/images/flag.png");
 
 
     //game 3 
-    thirdGameLevelData1 = loadStrings("/assets/levels/3-level.txt");
-    treasure = loadImage("/assets/images/Treasure_Chest.png");
+    thirdGameLevelData1 = loadStrings("assets/levels/3-level.txt");
+    treasure = loadImage("assets/images/Treasure_Chest.png");
 }
 
 

@@ -17,6 +17,8 @@ This is my Variation-Jam project. In this project, I create 3 simple games by us
 <h4>Game 3: Treasure<h4>
   In this game, use W A S D to move player 1; use UP-ARROW, DOWN-ARROW, LEFT-ARROW, RIGHT-ARROW to move player 2. When your character touch the mechanism floor, the relevant door will open. In this project, I used label to connect the door and mechanism. About the door animation, I tried to change the size at the beginning, but found that the tiles' original X, Y is on the left top, so I change the color alpha value to implement that.    
   
+<h5>Extra<h5>
+I don't know what happen to the my repository, my preload path is "assets/xxx/xxx", I tried "../assets/xxx" before, and image keeps failing to load, and then I copy them to main, problem solve. 
 
 ## Credits
 
